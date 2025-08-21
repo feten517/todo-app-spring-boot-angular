@@ -1,75 +1,188 @@
-import { Component, OnInit } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Todo } from './todo.model';
-import { NgForm } from '@angular/forms';
-import { TodoService } from './todo.service';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 
 @Component({
   selector: 'app-todo-list',
   templateUrl: './todo-list.component.html',
   styleUrls: ['./todo-list.component.css']
 })
-export class TodoListComponent implements OnInit {
-  todos: Todo[];
+export class TodoListComponent implements OnInit, OnDestroy {
+
+  todos: Todo[] = [];
   newTodo: Todo = new Todo();
-  editing = false;
-  editingTodo: Todo = new Todo();
+  searchTerm: string = '';
+  filter: string = 'all';
+  alertSound = new Audio('assets/sounds/bip.mp3');
 
-  constructor(
-    private todoService: TodoService,
-  ) {}
+  private alertsKey = 'todoAlerts';
+  private alertsMap: Record<string, boolean> = {};
 
-  ngOnInit(): void {
-    this.getTodos();
+  private deadlineCheckInterval: any;
+
+  constructor(private snackBar: MatSnackBar) {}
+
+ ngOnInit(): void {
+   // 1. Charge les tâches existantes
+   const savedTodos = localStorage.getItem('todos');
+   if (savedTodos) {
+     this.todos = JSON.parse(savedTodos).map(todo => ({
+       ...todo,
+       // Force le reconvertissement des dates strings en objets Date
+       deadline: todo.deadline ? new Date(todo.deadline) : null
+     }));
+     this.sortTodos();
+   }
+
+   // 2. Charge l'historique des alertes
+   const savedAlerts = localStorage.getItem(this.alertsKey);
+   this.alertsMap = savedAlerts ? JSON.parse(savedAlerts) : {};
+
+   // 3. Déclenchement IMMÉDIAT avec vérification forcée
+   setTimeout(() => {
+     console.log('Tâches chargées :', this.todos);
+     this.checkDeadlines(true); // true = mode forcé
+   }, 300);
+ }
+
+  ngOnDestroy(): void {
+    if (this.deadlineCheckInterval) {
+      clearInterval(this.deadlineCheckInterval);
+    }
   }
 
-  getTodos(): void {
-    this.todoService.getTodos().toPromise()
-      .then(todos => this.todos = todos );
+  saveTodos(): void {
+    this.sortTodos();
+    localStorage.setItem('todos', JSON.stringify(this.todos));
   }
 
-  createTodo(todoForm: NgForm): void {
-    this.todoService.createTodo(this.newTodo).toPromise()
-      .then(createTodo => {
-        todoForm.reset();
-        this.newTodo = new Todo();
-        this.todos.unshift(createTodo);
-      });
+  addTodo(): void {
+    if (this.newTodo.title.trim() !== '') {
+      this.newTodo.id = this.todos.length > 0
+        ? Math.max(...this.todos.map(t => t.id)) + 1
+        : 1;
+      this.todos.push({ ...this.newTodo });
+      this.newTodo = new Todo();
+      this.saveTodos();
+      this.playAlert(); // petit bip quand on ajoute
+    }
   }
 
-  deleteTodo(id: string): void {
-    this.todoService.deleteTodo(id).toPromise()
-      .then(() => {
-        this.todos = this.todos.filter(todo => todo.id !== id);
-      });
+  deleteTodo(id: number): void {
+    this.todos = this.todos.filter(todo => todo.id !== id);
+    this.saveTodos();
   }
 
-  updateTodo(todoData: Todo): void {
-    console.log(todoData);
-    this.todoService.updateTodo(todoData).toPromise()
-      .then(updatedTodo => {
-        const existingTodo = this.todos.find(todo => todo.id === updatedTodo.id);
-        Object.assign(existingTodo, updatedTodo);
-        this.clearEditing();
-      });
+  toggleComplete(todo: Todo): void {
+    todo.completed = !todo.completed;
+    this.saveTodos();
   }
 
-  toggleCompleted(todoData: Todo): void {
-    todoData.completed = !todoData.completed;
-    this.todoService.updateTodo(todoData).toPromise()
-      .then(updatedTodo => {
-        const existingTodo = this.todos.find(todo => todo.id === updatedTodo.id);
-        Object.assign(existingTodo, updatedTodo);
-      });
+  private sortTodos(): void {
+    const priorityOrder = { high: 1, medium: 2, low: 3 };
+
+    this.todos.sort((a, b) => {
+      if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+      }
+      if (a.deadline && b.deadline) {
+        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+      }
+      if (a.deadline && !b.deadline) return -1;
+      if (!a.deadline && b.deadline) return 1;
+      return 0;
+    });
   }
 
-  editTodo(todoData: Todo): void {
-    this.editing = true;
-    Object.assign(this.editingTodo, todoData);
+  getFilteredTodos(): Todo[] {
+    return this.todos.filter(todo => {
+      const matchesSearch = todo.title.toLowerCase().includes(this.searchTerm.toLowerCase());
+
+      if (this.filter === 'completed') {
+        return matchesSearch && todo.completed;
+      }
+      if (this.filter === 'pending') {
+        return matchesSearch && !todo.completed && !this.isDeadlineOverdue(todo.deadline);
+      }
+      if (this.filter === 'overdue') {
+        return matchesSearch && !todo.completed && this.isDeadlineOverdue(todo.deadline);
+      }
+      return matchesSearch;
+    });
   }
 
-  clearEditing(): void {
-    this.editingTodo = new Todo();
-    this.editing = false;
+  isDeadlineToday(deadline: string): boolean {
+    if (!deadline) return false;
+    const today = new Date();
+    const date = new Date(deadline);
+    return date.toDateString() === today.toDateString();
   }
 
+  isDeadlineOverdue(deadline: string): boolean {
+    if (!deadline) return false;
+    const today = new Date();
+    const date = new Date(deadline);
+    return date < today && !this.isDeadlineToday(deadline);
+  }
+
+  isDeadlineTomorrow(deadline: string): boolean {
+    if (!deadline) return false;
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const date = new Date(deadline);
+    return date.toDateString() === tomorrow.toDateString();
+  }
+
+  // 🔔 Vérifie les deadlines et notifie
+private checkDeadlines(forceCheck = false): void {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayISO = today.toISOString().slice(0, 10);
+  const messages: string[] = [];
+
+  // Réinitialisation quotidienne des alertes
+  if (forceCheck || localStorage.getItem('lastCheckDate') !== todayISO) {
+    localStorage.setItem('lastCheckDate', todayISO);
+    this.alertsMap = {}; // Reset des alertes chaque jour
+  }
+
+  this.todos.forEach(todo => {
+    if (todo.completed || !todo.deadline) return;
+
+    const deadlineDate = new Date(todo.deadline);
+    deadlineDate.setHours(0, 0, 0, 0);
+
+    const isToday = deadlineDate.getTime() === today.getTime();
+    const isTomorrow = new Date(today).setDate(today.getDate() + 1) === deadlineDate.getTime();
+    const isOverdue = deadlineDate < today && !isToday;
+
+    if (isToday || isTomorrow || isOverdue) {
+      const alertKey = `${todo.id}_${deadlineDate.toISOString().slice(0, 10)}`;
+
+      if (forceCheck || !this.alertsMap[alertKey]) {
+        if (isToday) messages.push(`🚨 "${todo.title}" - À faire AUJOURD'HUI`);
+        else if (isTomorrow) messages.push(`⚠️ "${todo.title}" - Pour DEMAIN`);
+        else messages.push(`❌ "${todo.title}" - EN RETARD depuis ${deadlineDate.toLocaleDateString()}`);
+
+        this.alertsMap[alertKey] = true;
+      }
+    }
+  });
+
+  if (messages.length > 0) {
+    this.snackBar.open(messages.join('\n\n'), 'OK', {
+      duration: 10000,
+      panelClass: ['multiline-snackbar'],
+      verticalPosition: 'top'
+    });
+    this.playAlert();
+    localStorage.setItem(this.alertsKey, JSON.stringify(this.alertsMap));
+  }
+}
+
+
+  private playAlert(): void {
+    this.alertSound.play().catch(err => console.log('Impossible de jouer le son :', err));
+  }
 }

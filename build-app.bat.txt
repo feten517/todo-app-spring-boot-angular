@@ -1,0 +1,25 @@
+@echo off
+echo ===== Début du build Angular + Spring Boot =====
+
+REM Aller dans le frontend Angular
+cd /d C:\Users\user\OneDrive\Bureau\todo-app-spring-boot-angular\angular-frontend
+
+echo ----- Installation des dépendances npm -----
+call npm install || exit /b 1
+
+echo ----- Build Angular en mode production -----
+call npm run build --prod || exit /b 1
+
+REM Retourner dans le dossier parent
+cd ..
+
+echo ----- Copie des fichiers Angular vers Spring Boot -----
+xcopy /E /I /Y angular-frontend\dist\angular-frontend spring-boot\src\main\resources\static
+
+REM Aller dans le backend Spring Boot
+cd spring-boot
+
+echo ----- Build Spring Boot avec Maven -----
+call mvn clean package -DskipTests || exit /b 1
+
+echo ===== Build terminé avec succès =====

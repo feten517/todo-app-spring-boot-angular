@@ -1,0 +1,174 @@
+:root {
+  --primary: #ff758c;  /* Rose vif */
+  --secondary: #ff7eb3; /* Rose moyen */
+  --danger: #ff4d6d;   /* Rose foncé */
+  --light-pink: #ffccd5; /* Rose très clair */
+  --bg-gradient-start: #fff0f3; /* Début dégradé */
+  --bg-gradient-end: #ffccd5;   /* Fin dégradé */
+}
+
+/* Reset de base */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+:host {
+  display: block;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+}
+
+/* Bulles animées roses */
+:host::before,
+:host::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.15;
+  animation: float 10s infinite ease-in-out alternate;
+  background: var(--secondary);
+}
+
+.container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(255, 117, 140, 0.2);
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(5px);
+}
+
+.title {
+  color: var(--primary);
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 2.2rem;
+  text-shadow: 0 2px 4px rgba(255, 117, 140, 0.2);
+}
+
+.input-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 2rem;
+}
+
+.task-input {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid var(--light-pink);
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.task-input:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 117, 140, 0.3);
+}
+
+.add-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 1rem;
+  box-shadow: 0 2px 5px rgba(255, 117, 140, 0.4);
+}
+
+.add-btn:hover {
+  background: var(--danger);
+  transform: translateY(-2px);
+}
+
+.task-list {
+  list-style: none;
+}
+
+.task-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  transition: all 0.3s;
+  border-left: 4px solid var(--primary);
+}
+
+.task-list li:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 12px rgba(255, 126, 179, 0.2);
+  background: white;
+}
+
+.completed span {
+  text-decoration: line-through;
+  color: #c9184a;
+  opacity: 0.7;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 5px;
+  margin-left: 10px;
+  transition: all 0.2s;
+}
+
+.delete-btn:hover {
+  transform: scale(1.2);
+}
+
+.hand-animation {
+  position: fixed;
+  bottom: 20px;   /* Distance depuis le bas */
+  right: 20px;    /* Distance depuis la droite */
+  width: 200px;   /* Taille réduite */
+  z-index: 100;
+  opacity: 0.9;
+  pointer-events: none;
+
+  animation: none; /* Pas de flottement */
+}
+
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+/* Bulles animées */
+:host::before {
+  width: 250px;
+  height: 250px;
+  background: var(--secondary);
+  top: -50px;
+  left: -50px;
+}
+
+:host::after {
+  width: 350px;
+  height: 350px;
+  background: var(--primary);
+  bottom: -100px;
+  right: -100px;
+  opacity: 0.1;
+}

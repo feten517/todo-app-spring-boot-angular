@@ -8,18 +8,20 @@ import { TodoListComponent } from './todo-list.component';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { TodoService } from './todo.service';
-
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 @NgModule({
   declarations: [
     AppComponent,
     TodoListComponent
   ],
   imports: [
+    MatSnackBarModule,
     BrowserModule,
     AppRoutingModule,
     BrowserAnimationsModule,
     FormsModule,
     HttpClientModule
+
   ],
   providers: [TodoService],
   bootstrap: [AppComponent]
