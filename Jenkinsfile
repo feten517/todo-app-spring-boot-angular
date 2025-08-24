@@ -1,35 +1,27 @@
 pipeline {
     agent any
-
-    environment {
-        // ➡️ Remplacez par le VRAI chemin de votre projet
-        PROJECT_PATH =  "${env.WORKSPACE}"
-        NODE_VERSION = '16.20.2'
-    }
-
     stages {
         stage('Vérification Accès') {
             steps {
                 script {
-                    // Vérifie que le chemin existe
-                    def dirExists = fileExists("${PROJECT_PATH}")
-                    if (!dirExists) {
-                        error "❌ ERREUR : Le dossier ${PROJECT_PATH} n'existe pas !"
-                    } else {
-                        echo "✅ Dossier trouvé : ${PROJECT_PATH}"
+                    if (!fileExists(".")) {
+                        error("❌ ERREUR : Workspace non accessible !")
                     }
+                    echo "✅ Dossier trouvé : ${env.WORKSPACE}"
                 }
             }
         }
-
         stage('Build Angular') {
             steps {
-                bat """
-                echo "Build Angular en cours..."
-                cd "${PROJECT_PATH}\\angular-frontend"
-                call npm install
-                call npx ng build --prod --no-source-map
-                """
+                // CHANGEZ ICI : bat -> sh
+                sh 'npm install'
+                sh 'npm run build'
+            }
+        }
+        stage('Build Spring Boot') {
+            steps {
+                // CHANGEZ ICI aussi si vous avez des bat
+                sh 'mvn clean package'
             }
         }
     }
