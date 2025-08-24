@@ -14,7 +14,7 @@ pipeline {
                         error("❌ Le projet Angular n'est pas dans 'angular-frontend'")
                     }
                     
-                    // Vérifier Spring Boot - essayez les deux chemins possibles
+                    // Vérifier Spring Boot
                     if (!fileExists('springboot-backend/pom.xml') && !fileExists('spring-boot/pom.xml')) {
                         error("❌ Aucun projet Spring Boot trouvé (springboot-backend/ ou spring-boot/)")
                     }
@@ -27,9 +27,21 @@ pipeline {
         stage('Installation Node.js') {
             steps {
                 script {
+                    // Installation de Node.js sans sudo
                     sh '''
-                        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-                        sudo apt-get install -y nodejs
+                        # Télécharger et installer Node.js localement
+                        curl -o node-setup.sh https://deb.nodesource.com/setup_18.x
+                        bash node-setup.sh
+                        apt-get update
+                        apt-get install -y nodejs
+                        
+                        # Alternative: utiliser Node Version Manager (nvm)
+                        # curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+                        # export NVM_DIR="$HOME/.nvm"
+                        # [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                        # nvm install 18
+                        # nvm use 18
+                        
                         echo "Node version: $(node --version)"
                         echo "NPM version: $(npm --version)"
                     '''
@@ -51,7 +63,6 @@ pipeline {
         stage('Build Spring Boot') {
             steps {
                 script {
-                    // Déterminer quel dossier Spring Boot utiliser
                     if (fileExists('springboot-backend/pom.xml')) {
                         dir('springboot-backend') {
                             sh 'mvn clean package -DskipTests'
