@@ -31,7 +31,7 @@ pipeline {
                         # Installer NVM (Node Version Manager)
                         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
                         export NVM_DIR="$HOME/.nvm"
-                        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
                         
                         # Installer et utiliser Node.js 18
                         nvm install 18
@@ -51,7 +51,7 @@ pipeline {
                     sh '''
                         # Charger NVM dans ce shell aussi
                         export NVM_DIR="$HOME/.nvm"
-                        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
                         nvm use 18
                         
                         npm install --force
