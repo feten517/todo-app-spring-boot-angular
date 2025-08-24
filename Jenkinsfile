@@ -49,6 +49,9 @@ pipeline {
                         # Ajouter Node.js au PATH
                         export PATH="$WORKSPACE/node-v18.20.4-linux-x64/bin:$PATH"
                         
+                        # Solution pour l'erreur OpenSSL dans Node.js 18+
+                        export NODE_OPTIONS="--openssl-legacy-provider"
+                        
                         npm install --force
                         npm run build -- --prod
                     '''
