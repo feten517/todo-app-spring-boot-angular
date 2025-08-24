@@ -27,25 +27,20 @@ pipeline {
         stage('Installation Node.js') {
             steps {
                 script {
-                    // Installation de Node.js sans sudo
                     sh '''
-                        # Télécharger et installer Node.js localement
-                        curl -o node-setup.sh https://deb.nodesource.com/setup_18.x
-                        bash node-setup.sh
-                        apt-get update
-                        apt-get install -y nodejs
+                        # Installer NVM (Node Version Manager)
+                        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+                        export NVM_DIR="$HOME/.nvm"
+                        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
                         
-                        # Alternative: utiliser Node Version Manager (nvm)
-                        # curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-                        # export NVM_DIR="$HOME/.nvm"
-                        # [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-                        # nvm install 18
-                        # nvm use 18
+                        # Installer et utiliser Node.js 18
+                        nvm install 18
+                        nvm use 18
                         
                         echo "Node version: $(node --version)"
                         echo "NPM version: $(npm --version)"
                     '''
-                    echo "✅ Node.js installé"
+                    echo "✅ Node.js installé via NVM"
                 }
             }
         }
@@ -53,8 +48,15 @@ pipeline {
         stage('Build Angular') {
             steps {
                 dir('angular-frontend') {
-                    sh 'npm install --force'
-                    sh 'npm run build -- --prod'
+                    sh '''
+                        # Charger NVM dans ce shell aussi
+                        export NVM_DIR="$HOME/.nvm"
+                        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                        nvm use 18
+                        
+                        npm install --force
+                        npm run build -- --prod
+                    '''
                     echo "✅ Build Angular réussi"
                 }
             }
