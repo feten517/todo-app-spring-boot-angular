@@ -8,12 +8,17 @@ pipeline {
             steps {
                 script {
                     echo "📁 Workspace: ${env.WORKSPACE}"
+                    
+                    // Vérifier Angular
                     if (!fileExists('angular-frontend/package.json')) {
-                        error("❌ Le projet Angular n'est pas dans le dossier 'angular-frontend'")
+                        error("❌ Le projet Angular n'est pas dans 'angular-frontend'")
                     }
-                    if (!fileExists('springboot-backend/pom.xml')) {
-                        error("❌ Le projet Spring Boot n'a pas de pom.xml dans 'springboot-backend'")
+                    
+                    // Vérifier Spring Boot - essayez les deux chemins possibles
+                    if (!fileExists('springboot-backend/pom.xml') && !fileExists('spring-boot/pom.xml')) {
+                        error("❌ Aucun projet Spring Boot trouvé (springboot-backend/ ou spring-boot/)")
                     }
+                    
                     echo "✅ Structure OK"
                 }
             }
@@ -45,8 +50,17 @@ pipeline {
         
         stage('Build Spring Boot') {
             steps {
-                dir('springboot-backend') {
-                    sh 'mvn clean package -DskipTests'
+                script {
+                    // Déterminer quel dossier Spring Boot utiliser
+                    if (fileExists('springboot-backend/pom.xml')) {
+                        dir('springboot-backend') {
+                            sh 'mvn clean package -DskipTests'
+                        }
+                    } else if (fileExists('spring-boot/pom.xml')) {
+                        dir('spring-boot') {
+                            sh 'mvn clean package -DskipTests'
+                        }
+                    }
                     echo "✅ Build Spring Boot réussi"
                 }
             }
@@ -54,8 +68,16 @@ pipeline {
         
         stage('Tests') {
             steps {
-                dir('springboot-backend') {
-                    sh 'mvn test'
+                script {
+                    if (fileExists('springboot-backend/pom.xml')) {
+                        dir('springboot-backend') {
+                            sh 'mvn test'
+                        }
+                    } else if (fileExists('spring-boot/pom.xml')) {
+                        dir('spring-boot') {
+                            sh 'mvn test'
+                        }
+                    }
                     echo "✅ Tests passés"
                 }
             }
@@ -65,8 +87,11 @@ pipeline {
             steps {
                 script {
                     echo "🚀 Déploiement réussi!"
-                    echo "L'application Spring Boot est prête dans springboot-backend/target/"
-                    archiveArtifacts artifacts: 'springboot-backend/target/*.jar', fingerprint: true
+                    if (fileExists('springboot-backend/pom.xml')) {
+                        archiveArtifacts artifacts: 'springboot-backend/target/*.jar', fingerprint: true
+                    } else if (fileExists('spring-boot/pom.xml')) {
+                        archiveArtifacts artifacts: 'spring-boot/target/*.jar', fingerprint: true
+                    }
                 }
             }
         }
