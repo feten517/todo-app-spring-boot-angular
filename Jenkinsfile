@@ -1,19 +1,18 @@
 pipeline {
     agent any
     tools {
-        // Utilise le Maven que vous avez configuré
-        maven 'maven'  // ← Gardez le nom exact que vous avez donné dans Jenkins
+        maven 'maven'
     }
     stages {
         stage('Vérification Structure') {
             steps {
                 script {
                     echo "📁 Workspace: ${env.WORKSPACE}"
-                    if (!fileExists('frontend/package.json')) {
-                        error("❌ Le projet Angular n'est pas dans le dossier 'frontend'")
+                    if (!fileExists('angular-frontend/package.json')) {
+                        error("❌ Le projet Angular n'est pas dans le dossier 'angular-frontend'")
                     }
-                    if (!fileExists('pom.xml')) {
-                        error("❌ Le projet Spring Boot n'a pas de pom.xml")
+                    if (!fileExists('springboot-backend/pom.xml')) {
+                        error("❌ Le projet Spring Boot n'a pas de pom.xml dans 'springboot-backend'")
                     }
                     echo "✅ Structure OK"
                 }
@@ -23,7 +22,6 @@ pipeline {
         stage('Installation Node.js') {
             steps {
                 script {
-                    // Installation de Node.js automatiquement
                     sh '''
                         curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
                         sudo apt-get install -y nodejs
@@ -37,7 +35,7 @@ pipeline {
         
         stage('Build Angular') {
             steps {
-                dir('frontend') {
+                dir('angular-frontend') {
                     sh 'npm install --force'
                     sh 'npm run build -- --prod'
                     echo "✅ Build Angular réussi"
@@ -47,16 +45,19 @@ pipeline {
         
         stage('Build Spring Boot') {
             steps {
-                // Utilise le Maven configuré dans Jenkins
-                sh 'mvn clean package -DskipTests'
-                echo "✅ Build Spring Boot réussi"
+                dir('springboot-backend') {
+                    sh 'mvn clean package -DskipTests'
+                    echo "✅ Build Spring Boot réussi"
+                }
             }
         }
         
         stage('Tests') {
             steps {
-                sh 'mvn test'
-                echo "✅ Tests passés"
+                dir('springboot-backend') {
+                    sh 'mvn test'
+                    echo "✅ Tests passés"
+                }
             }
         }
         
@@ -64,8 +65,8 @@ pipeline {
             steps {
                 script {
                     echo "🚀 Déploiement réussi!"
-                    echo "L'application est prête dans target/"
-                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                    echo "L'application Spring Boot est prête dans springboot-backend/target/"
+                    archiveArtifacts artifacts: 'springboot-backend/target/*.jar', fingerprint: true
                 }
             }
         }
@@ -74,14 +75,9 @@ pipeline {
     post {
         success {
             echo '🎉 Pipeline exécuté avec succès!'
-            // Nettoyage optionnel
-            sh 'sudo apt-get remove -y nodejs'
         }
         failure {
             echo '❌ Pipeline échoué. Vérifiez les logs.'
-        }
-        always {
-            echo '🔧 Nettoyage des processus...'
         }
     }
 }
