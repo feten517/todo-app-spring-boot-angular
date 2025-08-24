@@ -28,14 +28,16 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        # Installer Node.js 18 directement sans NVM
-                        curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-                        apt-get install -y nodejs
+                        # Télécharger et installer Node.js localement sans permissions root
+                        NODE_VERSION="18.20.4"
+                        curl -O https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz
+                        tar -xf node-v$NODE_VERSION-linux-x64.tar.xz
+                        export PATH="$PWD/node-v$NODE_VERSION-linux-x64/bin:$PATH"
                         
                         echo "Node version: $(node --version)"
                         echo "NPM version: $(npm --version)"
                     '''
-                    echo "✅ Node.js 18 installé directement"
+                    echo "✅ Node.js installé localement"
                 }
             }
         }
@@ -44,6 +46,9 @@ pipeline {
             steps {
                 dir('angular-frontend') {
                     sh '''
+                        # Ajouter Node.js au PATH
+                        export PATH="$WORKSPACE/node-v18.20.4-linux-x64/bin:$PATH"
+                        
                         npm install --force
                         npm run build -- --prod
                     '''
@@ -103,9 +108,14 @@ pipeline {
     post {
         success {
             echo '🎉 Pipeline exécuté avec succès!'
+            // Nettoyage
+            sh 'rm -rf node-v* || true'
         }
         failure {
             echo '❌ Pipeline échoué. Vérifiez les logs.'
+        }
+        always {
+            echo '🔧 Nettoyage terminé'
         }
     }
 }
