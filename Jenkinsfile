@@ -33,8 +33,8 @@ pipeline {
                         export NVM_DIR="$HOME/.nvm"
                         [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
                         
-                        # Installer et utiliser Node.js 18
-                        nvm install 18
+                        # Forcer l'installation de Node.js 18 (ignorer .nvmrc)
+                        nvm install 18 --latest-npm
                         nvm use 18
                         
                         echo "Node version: $(node --version)"
