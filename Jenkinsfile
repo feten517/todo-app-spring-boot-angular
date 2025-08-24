@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         // ➡️ Remplacez par le VRAI chemin de votre projet
-        PROJECT_PATH =  'C:\\Users\\user\\OneDrive\\Bureau\\todo-app-spring-boot-angular'
+        PROJECT_PATH =  "${env.WORKSPACE}"
         NODE_VERSION = '16.20.2'
     }
 
