@@ -28,19 +28,14 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        # Installer NVM (Node Version Manager)
-                        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-                        export NVM_DIR="$HOME/.nvm"
-                        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                        
-                        # Forcer l'installation de Node.js 18 (ignorer .nvmrc)
-                        nvm install 18 --latest-npm
-                        nvm use 18
+                        # Installer Node.js 18 directement sans NVM
+                        curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+                        apt-get install -y nodejs
                         
                         echo "Node version: $(node --version)"
                         echo "NPM version: $(npm --version)"
                     '''
-                    echo "✅ Node.js installé via NVM"
+                    echo "✅ Node.js 18 installé directement"
                 }
             }
         }
@@ -49,11 +44,6 @@ pipeline {
             steps {
                 dir('angular-frontend') {
                     sh '''
-                        # Charger NVM dans ce shell aussi
-                        export NVM_DIR="$HOME/.nvm"
-                        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                        nvm use 18
-                        
                         npm install --force
                         npm run build -- --prod
                     '''
