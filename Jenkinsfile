@@ -97,12 +97,23 @@ pipeline {
         stage('Déploiement') {
             steps {
                 script {
-                    echo "🚀 Déploiement réussi!"
-                    if (fileExists('springboot-backend/pom.xml')) {
-                        archiveArtifacts artifacts: 'springboot-backend/target/*.jar', fingerprint: true
-                    } else if (fileExists('spring-boot/pom.xml')) {
-                        archiveArtifacts artifacts: 'spring-boot/target/*.jar', fingerprint: true
-                    }
+                    echo "🚀 Déploiement en cours..."
+
+                    // Trouver le JAR compilé
+                    def jarPath = fileExists('springboot-backend/target/todoapp-0.0.1-SNAPSHOT.jar') ? 
+                                  'springboot-backend/target/todoapp-0.0.1-SNAPSHOT.jar' : 
+                                  'spring-boot/target/todoapp-0.0.1-SNAPSHOT.jar'
+
+                    // Archiver le JAR dans Jenkins
+                    archiveArtifacts artifacts: "${jarPath}", fingerprint: true
+
+                    // Stopper l'ancienne instance si elle existe
+                    sh "pkill -f ${jarPath} || true"
+
+                    // Lancer en arrière-plan sur le port 9090
+                    sh "nohup java -jar ${jarPath} --server.port=9090 > app.log 2>&1 &"
+
+                    echo "✅ Application déployée et démarrée sur le port 9090"
                 }
             }
         }
@@ -111,7 +122,7 @@ pipeline {
     post {
         success {
             echo '🎉 Pipeline exécuté avec succès!'
-            // Nettoyage
+            // Nettoyage Node.js téléchargé
             sh 'rm -rf node-v* || true'
         }
         failure {
